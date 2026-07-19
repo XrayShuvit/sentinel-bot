@@ -1,5 +1,7 @@
 require("dotenv").config();
 
+const { addWarning } = require("./database");
+
 const {
   Client,
   GatewayIntentBits,
@@ -57,6 +59,24 @@ client.once(Events.ClientReady, async (readyClient) => {
     {
       name: "willkommen-test",
       description: "Zeigt eine Vorschau der Begrüßungsnachricht.",
+    },
+    {
+      name: "warn",
+      description: "Verwarnt ein Mitglied.",
+      options: [
+        {
+          name: "nutzer",
+          description: "Welches Mitglied soll verwarnt werden?",
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+        {
+          name: "grund",
+          description: "Warum wird das Mitglied verwarnt?",
+          type: ApplicationCommandOptionType.String,
+          required: true,
+        },
+      ],
     },
   ];
 
@@ -212,6 +232,75 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.editReply(
       `${deletedMessages.size} Nachrichten wurden gelöscht.`
     );
+  }
+
+  if (interaction.commandName === "warn") {
+    const hasPermission = interaction.memberPermissions.has(
+      PermissionFlagsBits.ModerateMembers
+    );
+
+    if (!hasPermission) {
+      await interaction.reply({
+        content: "Du darfst keine Mitglieder verwarnen.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    const selectedUser = interaction.options.getUser("nutzer");
+    const reason = interaction.options.getString("grund");
+
+    if (selectedUser.bot) {
+      await interaction.reply({
+        content: "Bots können nicht verwarnt werden.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    if (selectedUser.id === interaction.user.id) {
+      await interaction.reply({
+        content: "Du kannst dich nicht selbst verwarnen.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    addWarning(
+      interaction.guild.id,
+      selectedUser.id,
+      interaction.user.id,
+      reason
+    );
+
+    const warningEmbed = new EmbedBuilder()
+      .setColor("#ff9f1c")
+      .setTitle("Verwarnung gespeichert")
+      .addFields(
+        {
+          name: "Mitglied",
+          value: `${selectedUser}`,
+        },
+        {
+          name: "Moderator",
+          value: `${interaction.user}`,
+        },
+        {
+          name: "Grund",
+          value: reason,
+        }
+      )
+      .setFooter({
+        text: "Sentinel Warnsystem",
+      })
+      .setTimestamp();
+
+    await interaction.reply({
+      embeds: [warningEmbed],
+    });
   }
 });
 
