@@ -7,6 +7,9 @@ Sentinel ist ein Discord-Bot, den ich mit Node.js und Discord.js entwickle.
 - `/ping` prüft, ob der Bot erreichbar ist
 - `/serverinfo` zeigt Informationen über den Server
 - `/userinfo` zeigt Informationen über einen Nutzer
+- Automatische Begrüßung neuer Mitglieder
+- `/willkommen-test` zeigt eine Vorschau der Begrüßung
+- `/clear` löscht Nachrichten für Moderatoren
 
 ## Technologien
 
