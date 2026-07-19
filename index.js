@@ -6,6 +6,7 @@ const {
   Events,
   EmbedBuilder,
   ApplicationCommandOptionType,
+  PermissionFlagsBits,
 } = require("discord.js");
 
 const client = new Client({
@@ -40,6 +41,20 @@ client.once(Events.ClientReady, async (readyClient) => {
       ],
     },
     {
+      name: "clear",
+      description: "Löscht mehrere Nachrichten aus dem aktuellen Kanal.",
+      options: [
+        {
+          name: "anzahl",
+          description: "Wie viele Nachrichten sollen gelöscht werden?",
+          type: ApplicationCommandOptionType.Integer,
+          required: true,
+          min_value: 1,
+          max_value: 100,
+        },
+      ],
+    },
+    {
       name: "willkommen-test",
       description: "Zeigt eine Vorschau der Begrüßungsnachricht.",
     },
@@ -55,33 +70,6 @@ client.once(Events.ClientReady, async (readyClient) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "willkommen-test") {
-    const welcomeTest = new EmbedBuilder()
-      .setColor("#c7ff18")
-      .setTitle("Willkommen auf dem Server!")
-      .setDescription(
-        `Hey ${interaction.user}, schön, dass du auf **${interaction.guild.name}** dabei bist!`
-      )
-      .setThumbnail(
-        interaction.user.displayAvatarURL({
-          size: 256,
-        })
-      )
-      .addFields({
-        name: "Mitglied Nummer",
-        value: `${interaction.guild.memberCount}`,
-      })
-      .setFooter({
-        text: "Sentinel Begrüßungssystem · Vorschau",
-      })
-      .setTimestamp();
-
-    await interaction.reply({
-      content: `Willkommen ${interaction.user}! 👋`,
-      embeds: [welcomeTest],
-    });
-  }
-
   if (interaction.commandName === "ping") {
     await interaction.reply("Pong! 🏓 Sentinel funktioniert.");
   }
@@ -92,7 +80,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const serverInfo = new EmbedBuilder()
       .setColor("#c7ff18")
       .setTitle(server.name)
-      .setDescription("Hier sind einige Informationen über diesen Server.")
+      .setDescription(
+        "Hier sind einige Informationen über diesen Server."
+      )
       .addFields(
         {
           name: "Mitglieder",
@@ -109,11 +99,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
           value: server.id,
         }
       )
-      .setThumbnail(server.iconURL())
       .setFooter({
         text: "Sentinel Serverinfo",
       })
       .setTimestamp();
+
+    const serverIcon = server.iconURL();
+
+    if (serverIcon) {
+      serverInfo.setThumbnail(serverIcon);
+    }
 
     await interaction.reply({
       embeds: [serverInfo],
@@ -160,6 +155,63 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({
       embeds: [userInfo],
     });
+  }
+
+  if (interaction.commandName === "willkommen-test") {
+    const welcomeTest = new EmbedBuilder()
+      .setColor("#c7ff18")
+      .setTitle("Willkommen auf dem Server!")
+      .setDescription(
+        `Hey ${interaction.user}, schön, dass du auf **${interaction.guild.name}** dabei bist!`
+      )
+      .setThumbnail(
+        interaction.user.displayAvatarURL({
+          size: 256,
+        })
+      )
+      .addFields({
+        name: "Mitglied Nummer",
+        value: `${interaction.guild.memberCount}`,
+      })
+      .setFooter({
+        text: "Sentinel Begrüßungssystem · Vorschau",
+      })
+      .setTimestamp();
+
+    await interaction.reply({
+      content: `Willkommen ${interaction.user}! 👋`,
+      embeds: [welcomeTest],
+    });
+  }
+
+  if (interaction.commandName === "clear") {
+    const hasPermission = interaction.memberPermissions.has(
+      PermissionFlagsBits.ManageMessages
+    );
+
+    if (!hasPermission) {
+      await interaction.reply({
+        content: "Du darfst keine Nachrichten verwalten.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    const amount = interaction.options.getInteger("anzahl");
+
+    await interaction.deferReply({
+      ephemeral: true,
+    });
+
+    const deletedMessages = await interaction.channel.bulkDelete(
+      amount,
+      true
+    );
+
+    await interaction.editReply(
+      `${deletedMessages.size} Nachrichten wurden gelöscht.`
+    );
   }
 });
 
