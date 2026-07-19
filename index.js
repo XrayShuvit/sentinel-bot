@@ -9,7 +9,10 @@ const {
 } = require("discord.js");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+  ],
 });
 
 client.once(Events.ClientReady, async (readyClient) => {
@@ -36,6 +39,10 @@ client.once(Events.ClientReady, async (readyClient) => {
         },
       ],
     },
+    {
+  name: "willkommen-test",
+  description: "Zeigt eine Vorschau der Begrüßungsnachricht.",
+},
   ];
 
   for (const server of readyClient.guilds.cache.values()) {
@@ -47,6 +54,33 @@ client.once(Events.ClientReady, async (readyClient) => {
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "willkommen-test") {
+  const welcomeTest = new EmbedBuilder()
+    .setColor("#c7ff18")
+    .setTitle("Willkommen auf dem Server!")
+    .setDescription(
+      `Hey ${interaction.user}, schön, dass du auf **${interaction.guild.name}** dabei bist!`
+    )
+    .setThumbnail(
+      interaction.user.displayAvatarURL({
+        size: 256,
+      })
+    )
+    .addFields({
+      name: "Mitglied Nummer",
+      value: `${interaction.guild.memberCount}`,
+    })
+    .setFooter({
+      text: "Sentinel Begrüßungssystem · Vorschau",
+    })
+    .setTimestamp();
+
+  await interaction.reply({
+    content: `Willkommen ${interaction.user}! 👋`,
+    embeds: [welcomeTest],
+  });
+}
 
   if (interaction.commandName === "ping") {
     await interaction.reply("Pong! 🏓 Sentinel funktioniert.");
@@ -127,6 +161,40 @@ client.on(Events.InteractionCreate, async (interaction) => {
       embeds: [userInfo],
     });
   }
+});
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  const channel = member.guild.systemChannel;
+
+  if (!channel) {
+    console.log("Es wurde kein Begrüßungskanal gefunden.");
+    return;
+  }
+
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor("#c7ff18")
+    .setTitle("Willkommen auf dem Server!")
+    .setDescription(
+      `Hey ${member}, schön, dass du auf **${member.guild.name}** dabei bist!`
+    )
+    .setThumbnail(
+      member.user.displayAvatarURL({
+        size: 256,
+      })
+    )
+    .addFields({
+      name: "Mitglied Nummer",
+      value: `${member.guild.memberCount}`,
+    })
+    .setFooter({
+      text: "Sentinel Begrüßungssystem",
+    })
+    .setTimestamp();
+
+  await channel.send({
+    content: `Willkommen ${member}! 👋`,
+    embeds: [welcomeEmbed],
+  });
 });
 
 client.login(process.env.DISCORD_TOKEN);
