@@ -2,15 +2,13 @@
 
 Sentinel ist ein Discord-Bot, den ich mit Node.js und Discord.js entwickle.
 
-Das Projekt entsteht Schritt für Schritt und dient mir dazu, die Entwicklung von Discord-Bots, Slash-Commands und Automatisierungen zu lernen.
-
 ## Funktionen
 
 - `/ping` prüft, ob der Bot erreichbar ist
-- `/serverinfo` zeigt Informationen über den aktuellen Server
-- `/userinfo` zeigt Informationen über einen Discord-Nutzer
+- `/serverinfo` zeigt Informationen über den Server
+- `/userinfo` zeigt Informationen über einen Nutzer
 
-## Verwendete Technologien
+## Technologien
 
 - JavaScript
 - Node.js
@@ -23,3 +21,38 @@ Repository herunterladen:
 
 ```bash
 git clone https://github.com/XrayShuvit/sentinel-bot.git
+```
+
+Abhängigkeiten installieren:
+
+```bash
+npm install
+```
+
+Eine `.env`-Datei erstellen:
+
+```env
+DISCORD_TOKEN=DEIN_BOT_TOKEN
+```
+
+Bot starten:
+
+```bash
+node index.js
+```
+
+## Sicherheit
+
+Der Bot-Token wird über eine `.env`-Datei geladen und nicht auf GitHub veröffentlicht.
+
+## Geplante Funktionen
+
+- Begrüßung neuer Mitglieder
+- Moderationsbefehle
+- Warnsystem
+- Konfigurierbarer Begrüßungskanal
+- Datenbank
+
+## Entwickler
+
+Entwickelt von [Tim](https://github.com/XrayShuvit).
