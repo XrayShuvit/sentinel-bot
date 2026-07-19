@@ -1,6 +1,9 @@
 require("dotenv").config();
 
-const { addWarning } = require("./database");
+const {
+  addWarning,
+  getWarnings,
+} = require("./database");
 
 const {
   Client,
@@ -19,7 +22,9 @@ const client = new Client({
 });
 
 client.once(Events.ClientReady, async (readyClient) => {
-  console.log(`Sentinel ist online als ${readyClient.user.tag}`);
+  console.log(
+    `Sentinel ist online als ${readyClient.user.tag}`
+  );
 
   const commands = [
     {
@@ -44,7 +49,7 @@ client.once(Events.ClientReady, async (readyClient) => {
     },
     {
       name: "clear",
-      description: "Löscht mehrere Nachrichten aus dem aktuellen Kanal.",
+      description: "Löscht Nachrichten aus dem aktuellen Kanal.",
       options: [
         {
           name: "anzahl",
@@ -78,6 +83,19 @@ client.once(Events.ClientReady, async (readyClient) => {
         },
       ],
     },
+    {
+      name: "warnungen",
+      description: "Zeigt die Verwarnungen eines Mitglieds.",
+      options: [
+        {
+          name: "nutzer",
+          description:
+            "Von welchem Mitglied sollen Warnungen angezeigt werden?",
+          type: ApplicationCommandOptionType.User,
+          required: true,
+        },
+      ],
+    },
   ];
 
   for (const server of readyClient.guilds.cache.values()) {
@@ -91,7 +109,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "ping") {
-    await interaction.reply("Pong! 🏓 Sentinel funktioniert.");
+    await interaction.reply(
+      "Pong! 🏓 Sentinel funktioniert."
+    );
   }
 
   if (interaction.commandName === "serverinfo") {
@@ -137,11 +157,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.commandName === "userinfo") {
     const selectedUser =
-      interaction.options.getUser("nutzer") ?? interaction.user;
+      interaction.options.getUser("nutzer") ??
+      interaction.user;
 
     const userInfo = new EmbedBuilder()
       .setColor("#5865f2")
-      .setTitle(`Informationen über ${selectedUser.username}`)
+      .setTitle(
+        `Informationen über ${selectedUser.username}`
+      )
       .setThumbnail(
         selectedUser.displayAvatarURL({
           size: 256,
@@ -155,7 +178,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         },
         {
           name: "Anzeigename",
-          value: selectedUser.globalName ?? "Nicht festgelegt",
+          value:
+            selectedUser.globalName ??
+            "Nicht festgelegt",
           inline: true,
         },
         {
@@ -164,7 +189,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         },
         {
           name: "Konto erstellt am",
-          value: selectedUser.createdAt.toLocaleDateString("de-DE"),
+          value: selectedUser.createdAt.toLocaleDateString(
+            "de-DE"
+          ),
         }
       )
       .setFooter({
@@ -205,29 +232,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   if (interaction.commandName === "clear") {
-    const hasPermission = interaction.memberPermissions.has(
-      PermissionFlagsBits.ManageMessages
-    );
+    const hasPermission =
+      interaction.memberPermissions.has(
+        PermissionFlagsBits.ManageMessages
+      );
 
     if (!hasPermission) {
       await interaction.reply({
-        content: "Du darfst keine Nachrichten verwalten.",
+        content:
+          "Du darfst keine Nachrichten verwalten.",
         ephemeral: true,
       });
 
       return;
     }
 
-    const amount = interaction.options.getInteger("anzahl");
+    const amount =
+      interaction.options.getInteger("anzahl");
 
     await interaction.deferReply({
       ephemeral: true,
     });
 
-    const deletedMessages = await interaction.channel.bulkDelete(
-      amount,
-      true
-    );
+    const deletedMessages =
+      await interaction.channel.bulkDelete(
+        amount,
+        true
+      );
 
     await interaction.editReply(
       `${deletedMessages.size} Nachrichten wurden gelöscht.`
@@ -235,21 +266,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 
   if (interaction.commandName === "warn") {
-    const hasPermission = interaction.memberPermissions.has(
-      PermissionFlagsBits.ModerateMembers
-    );
+    const hasPermission =
+      interaction.memberPermissions.has(
+        PermissionFlagsBits.ModerateMembers
+      );
 
     if (!hasPermission) {
       await interaction.reply({
-        content: "Du darfst keine Mitglieder verwarnen.",
+        content:
+          "Du darfst keine Mitglieder verwarnen.",
         ephemeral: true,
       });
 
       return;
     }
 
-    const selectedUser = interaction.options.getUser("nutzer");
-    const reason = interaction.options.getString("grund");
+    const selectedUser =
+      interaction.options.getUser("nutzer");
+
+    const reason =
+      interaction.options.getString("grund");
 
     if (selectedUser.bot) {
       await interaction.reply({
@@ -262,7 +298,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (selectedUser.id === interaction.user.id) {
       await interaction.reply({
-        content: "Du kannst dich nicht selbst verwarnen.",
+        content:
+          "Du kannst dich nicht selbst verwarnen.",
         ephemeral: true,
       });
 
@@ -302,13 +339,57 @@ client.on(Events.InteractionCreate, async (interaction) => {
       embeds: [warningEmbed],
     });
   }
+
+  if (interaction.commandName === "warnungen") {
+    const hasPermission =
+      interaction.memberPermissions.has(
+        PermissionFlagsBits.ModerateMembers
+      );
+
+    if (!hasPermission) {
+      await interaction.reply({
+        content:
+          "Du darfst keine Verwarnungen einsehen.",
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    const selectedUser =
+      interaction.options.getUser("nutzer");
+
+    const warnings = getWarnings(
+      interaction.guild.id,
+      selectedUser.id
+    );
+
+    if (warnings.length === 0) {
+      await interaction.reply({
+        content:
+          `${selectedUser} hat keine Verwarnungen.`,
+        ephemeral: true,
+      });
+
+      return;
+    }
+
+    await interaction.reply({
+      content:
+        `${selectedUser} hat ${warnings.length} Verwarnung(en).`,
+      ephemeral: true,
+    });
+  }
 });
 
 client.on(Events.GuildMemberAdd, async (member) => {
   const channel = member.guild.systemChannel;
 
   if (!channel) {
-    console.log("Es wurde kein Begrüßungskanal gefunden.");
+    console.log(
+      "Es wurde kein Begrüßungskanal gefunden."
+    );
+
     return;
   }
 
